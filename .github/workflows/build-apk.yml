@@ -1,40 +1,105 @@
-name: Build WFESC APK
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
-on:
-  workflow_dispatch:
+void main() {
+  runApp(const WFESCApp());
+}
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+class WFESCApp extends StatelessWidget {
+  const WFESCApp({super.key});
 
-    steps:
-      - name: Download project
-        uses: actions/checkout@v4
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'WFESC',
+      theme: ThemeData.dark(),
+      home: const WFESCWebView(),
+    );
+  }
+}
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+class WFESCWebView extends StatefulWidget {
+  const WFESCWebView({super.key});
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.35.2"
-          channel: stable
-          cache: true
+  @override
+  State<WFESCWebView> createState() => _WFESCWebViewState();
+}
 
-      - name: Create Android project files
-        run: flutter create --platforms=android .
+class _WFESCWebViewState extends State<WFESCWebView> {
+  late final WebViewController controller;
 
-      - name: Install dependencies
-        run: flutter pub get
+  String? errorMessage;
 
-      - name: Build APK
-        run: flutter build apk --release
+  @override
+  void initState() {
+    super.initState();
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: WFESC-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+    controller = WebViewController()
+      ..setJavaScriptMode(
+        JavaScriptMode.unrestricted,
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onWebResourceError: (error) {
+            setState(() {
+              errorMessage =
+                  'خطأ في تحميل الموقع:\n${error.description}';
+            });
+          },
+        ),
+      );
+
+    loadWebsite();
+  }
+
+  Future<void> loadWebsite() async {
+    try {
+      final html = await rootBundle.loadString(
+        'assets/web/index.html',
+      );
+
+      await controller.loadHtmlString(
+        html,
+        baseUrl: 'file:///android_asset/flutter_assets/assets/web/',
+      );
+    } catch (e) {
+      setState(() {
+        errorMessage =
+            'تعذر تحميل ملف WFESC:\n$e';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (errorMessage != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF050505),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF050505),
+      body: SafeArea(
+        child: WebViewWidget(
+          controller: controller,
+        ),
+      ),
+    );
+  }
+}
