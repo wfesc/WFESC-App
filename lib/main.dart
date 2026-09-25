@@ -29,18 +29,50 @@ class WFESCWebView extends StatefulWidget {
 class _WFESCWebViewState extends State<WFESCWebView> {
   late final WebViewController controller;
 
+  String? errorMessage;
+
   @override
   void initState() {
     super.initState();
 
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onWebResourceError: (error) {
+            setState(() {
+              errorMessage =
+                  'خطأ في تحميل الموقع:\n${error.description}';
+            });
+          },
+        ),
+      )
       ..loadFlutterAsset('assets/web/index.html');
   }
 
   @override
   Widget build(BuildContext context) {
+    if (errorMessage != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF050505),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
+      backgroundColor: const Color(0xFF050505),
       body: SafeArea(
         child: WebViewWidget(
           controller: controller,
