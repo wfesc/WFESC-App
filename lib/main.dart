@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 void main() {
   runApp(const WFESCApp());
@@ -13,29 +14,36 @@ class WFESCApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'WFESC',
       theme: ThemeData.dark(),
-      home: const WFESCHome(),
+      home: const WFESCWebView(),
     );
   }
 }
 
-class WFESCHome extends StatelessWidget {
-  const WFESCHome({super.key});
+class WFESCWebView extends StatefulWidget {
+  const WFESCWebView({super.key});
+
+  @override
+  State<WFESCWebView> createState() => _WFESCWebViewState();
+}
+
+class _WFESCWebViewState extends State<WFESCWebView> {
+  late final WebViewController controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadFlutterAsset('assets/web/index.html');
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF050505),
-      appBar: AppBar(
-        title: const Text('WFESC'),
-        backgroundColor: const Color(0xFF050505),
-      ),
-      body: const Center(
-        child: Text(
-          'WFESC',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
+      body: SafeArea(
+        child: WebViewWidget(
+          controller: controller,
         ),
       ),
     );
