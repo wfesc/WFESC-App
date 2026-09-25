@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 void main() {
@@ -36,7 +37,9 @@ class _WFESCWebViewState extends State<WFESCWebView> {
     super.initState();
 
     controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setJavaScriptMode(
+        JavaScriptMode.unrestricted,
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onWebResourceError: (error) {
@@ -46,8 +49,27 @@ class _WFESCWebViewState extends State<WFESCWebView> {
             });
           },
         ),
-      )
-      ..loadFlutterAsset('assets/web/index.html');
+      );
+
+    loadWebsite();
+  }
+
+  Future<void> loadWebsite() async {
+    try {
+      final html = await rootBundle.loadString(
+        'assets/web/index.html',
+      );
+
+      await controller.loadHtmlString(
+        html,
+        baseUrl: 'file:///android_asset/flutter_assets/assets/web/',
+      );
+    } catch (e) {
+      setState(() {
+        errorMessage =
+            'تعذر تحميل ملف WFESC:\n$e';
+      });
+    }
   }
 
   @override
